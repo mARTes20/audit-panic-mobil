@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <!--
+    viewport: width=device-width es crítico en móvil.
+    user-scalable=no evita el zoom accidental con dos dedos durante el juego.
+    viewport-fit=cover cubre el notch en iPhones modernos.
+  -->
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0,
+                 user-scalable=no, viewport-fit=cover" />
+  <!-- Evita que iOS muestre una barra de dirección al hacer scroll -->
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <title>Audit Panic 📁</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- ===================== PANTALLA DE INICIO ===================== -->
+  <div id="screen-start" class="screen active">
+    <div class="title-container">
+      <div class="title-pixel">AUDIT</div>
+      <div class="title-pixel accent">PANIC</div>
+      <div class="subtitle">¡La auditoría sorpresa llegó!<br>Encuentra los documentos antes de que te atrapen.</div>
+    </div>
+
+    <div class="controls-info">
+      <div class="controls-title">🕹 CONTROLES</div>
+      <div class="controls-grid">
+        <span>WASD / ↑↓←→</span><span>Mover</span>
+        <span>E / ESPACIO</span><span>Recoger</span>
+        <span>ESC</span><span>Pausa</span>
+        <span>Joystick</span><span>Mover (móvil)</span>
+        <span>Botón E</span><span>Recoger (móvil)</span>
+      </div>
+    </div>
+
+    <div class="controls-info" style="margin-top:0">
+      <div class="controls-title">☕ POWER-UPS</div>
+      <div class="controls-grid">
+        <span style="color:#c8691a">☕ Café</span><span>Velocidad x1.8</span>
+        <span style="color:#aaaaee">📎 Clips</span><span>Auditor lento</span>
+      </div>
+    </div>
+
+    <button id="btn-start" class="pixel-btn">▶ INICIAR AUDITORÍA</button>
+    <div class="flavor-text">"Nunca fue la intención defraudar al fisco..."</div>
+  </div>
+
+  <!-- ===================== PANTALLA DE JUEGO ===================== -->
+  <div id="screen-game" class="screen">
+
+    <!-- HUD superior -->
+    <div id="hud">
+      <div class="hud-block">
+        <span class="hud-label">⏱ TIEMPO</span>
+        <span id="hud-timer" class="hud-value">90</span>
+      </div>
+      <div class="hud-block">
+        <span class="hud-label">✅ DOCS</span>
+        <span id="hud-docs" class="hud-value">0/12</span>
+      </div>
+      <div class="hud-block hud-target-block">
+        <span class="hud-label">🔎 BUSCAR</span>
+        <span id="hud-target" class="hud-target-value">—</span>
+      </div>
+      <div class="hud-block suspicion-block">
+        <span class="hud-label">🔍 SOSPECHA</span>
+        <div id="suspicion-bar-wrap">
+          <div id="suspicion-bar"></div>
+        </div>
+      </div>
+      <div class="hud-block">
+        <span class="hud-label">⭐ PTS</span>
+        <span id="hud-score" class="hud-value">0</span>
+      </div>
+      <div id="hud-powerups">
+        <span id="hud-coffee" class="hud-powerup hidden">☕ <span id="hud-coffee-t">5</span>s</span>
+        <span id="hud-clips"  class="hud-powerup clips hidden">📎 <span id="hud-clips-t">5</span>s</span>
+      </div>
+    </div>
+
+    <!-- Canvas principal — ocupa el espacio disponible entre HUD y controles -->
+    <canvas id="gameCanvas"></canvas>
+
+    <!--
+      CONTROLES MÓVILES
+      ─────────────────
+      Se muestran solo en pantallas táctiles (CSS media query + JS feature detect).
+      Están en position:fixed para NO afectar el flujo del documento
+      y no empujar el canvas hacia arriba.
+      El joystick virtual va abajo-izquierda; el botón E, abajo-derecha.
+    -->
+    <div id="mobile-controls">
+      <!-- Área del joystick virtual -->
+      <div id="touch-joystick">
+        <div id="joystick-knob"></div>
+      </div>
+      <!-- Botón de acción (recoger documento) -->
+      <button id="touch-action" aria-label="Recoger documento">E</button>
+    </div>
+
+    <!--
+      AVISO DE ORIENTACIÓN
+      ─────────────────────
+      Aparece automáticamente en portrait (CSS @media orientation).
+      No bloquea el juego, solo sugiere girar el teléfono.
+    -->
+    <div id="rotate-warning">
+      <span>📱</span>
+      <span>Gira tu celular para<br>una mejor experiencia</span>
+    </div>
+
+  </div><!-- /screen-game -->
+
+  <!-- ===================== PANTALLA DE PAUSA ===================== -->
+  <div id="screen-pause" class="screen pause-screen">
+    <div class="pause-icon">⏸</div>
+    <div class="pause-title">PAUSA</div>
+    <div class="pause-tip">El auditor te está esperando...</div>
+    <button id="btn-resume" class="pixel-btn">▶ CONTINUAR</button>
+    <button id="btn-pause-menu" class="pixel-btn">⌂ MENÚ PRINCIPAL</button>
+    <div class="pause-hint">ESC o toca para continuar</div>
+  </div>
+
+  <!-- ===================== PANTALLA GAME OVER ===================== -->
+  <div id="screen-gameover" class="screen">
+    <div class="go-icon">🚨</div>
+    <div class="go-title">¡AUDITORÍA FALLIDA!</div>
+    <div class="go-sub">El auditor encontró las inconsistencias.</div>
+    <div class="go-stats">
+      <div>Documentos archivados: <span id="go-docs">0</span></div>
+      <div>Puntuación final: <span id="go-score">0</span></div>
+    </div>
+    <button id="btn-restart" class="pixel-btn danger">↺ REINTENTAR</button>
+    <button id="btn-menu" class="pixel-btn">⌂ MENÚ</button>
+  </div>
+
+  <!-- ===================== PANTALLA DE VICTORIA ===================== -->
+  <div id="screen-win" class="screen">
+    <div class="win-icon">🎉</div>
+    <div class="win-title">¡AUDITORÍA SUPERADA!</div>
+    <div class="win-sub">Lograste archivar todo a tiempo.</div>
+    <div class="win-stats">
+      <div>Documentos archivados: <span id="win-docs">0</span></div>
+      <div>Puntuación final: <span id="win-score">0</span></div>
+    </div>
+    <button id="btn-restart-win" class="pixel-btn">↺ JUGAR DE NUEVO</button>
+    <button id="btn-menu-win" class="pixel-btn">⌂ MENÚ</button>
+  </div>
+
+  <script src="game.js"></script>
+</body>
+</html>

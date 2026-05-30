@@ -1,0 +1,551 @@
+/* ======================================================
+   AUDIT PANIC — style.css  v5.1 (Mobile Fix)
+   ── Cambios respecto a v4 ──
+   • html/body: touch-action:none para bloquear scroll en móvil
+   • #gameCanvas: flex:1 + max-height para no salirse de pantalla
+   • #mobile-controls: joystick + botón E, position:fixed,
+     oculto en desktop, visible en pantallas táctiles / pequeñas
+   • #touch-joystick / #joystick-knob: joystick virtual pixel-art
+   • #touch-action: botón E semitransparente
+   • #rotate-warning: aviso orientación portrait (solo móvil)
+   • Media queries responsive para HUD compacto en móvil
+   ====================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323:wght@400&display=swap');
+
+/* ── Variables de paleta ── */
+:root {
+  --bg-dark:         #0d0d1a;
+  --bg-panel:        #14142b;
+  --bg-panel2:       #1e1e3a;
+  --accent-green:    #39ff6a;
+  --accent-yellow:   #ffe94d;
+  --accent-red:      #ff4444;
+  --accent-blue:     #4daaff;
+  --accent-orange:   #ff9800;
+  --text-main:       #e8e8f8;
+  --text-dim:        #8888aa;
+  --border-pixel:    #3a3a6a;
+  --suspicion-low:   #39ff6a;
+  --suspicion-mid:   #ffe94d;
+  --suspicion-hi:    #ff4444;
+
+  /* Altura del HUD — usada por JS para calcular canvas */
+  --hud-height:      46px;
+  /* Altura de controles móviles — usada por JS */
+  --mobile-ctrl-h:   120px;
+}
+
+/* ════════════════════════════════════════════
+   RESET GLOBAL
+   ════════════════════════════════════════════ */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  /* Previene selección de texto al pulsar controles táctiles */
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  background: var(--bg-dark);
+  /*
+    overflow:hidden → evita scroll en móvil.
+    touch-action:none → previene el pan/zoom del navegador en el canvas.
+    Sin esto el navegador intercepta los toques y el joystick falla.
+  */
+  overflow: hidden;
+  touch-action: none;
+  font-family: 'Press Start 2P', monospace;
+  color: var(--text-main);
+  image-rendering: pixelated;
+}
+
+/* ════════════════════════════════════════════
+   PANTALLAS
+   ════════════════════════════════════════════ */
+.screen {
+  display: none;
+  position: fixed;
+  inset: 0;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  background: var(--bg-dark);
+  z-index: 10;
+  /* Permite scroll interno en screens de menú pequeñas */
+  overflow-y: auto;
+  padding: 12px 8px;
+}
+.screen.active { display: flex; }
+
+/* ════════════════════════════════════════════
+   PANTALLA DE INICIO
+   ════════════════════════════════════════════ */
+.title-container {
+  text-align: center;
+  margin-bottom: 4px;
+  animation: flicker 3s infinite;
+}
+.title-pixel {
+  font-size: clamp(1.8rem, 7vw, 4.5rem);
+  line-height: 1.1;
+  color: var(--accent-yellow);
+  text-shadow: 4px 4px 0 #a86c00, 0 0 30px rgba(255,233,77,.4);
+  letter-spacing: 4px;
+}
+.title-pixel.accent {
+  color: var(--accent-red);
+  text-shadow: 4px 4px 0 #800000, 0 0 30px rgba(255,68,68,.5);
+}
+.subtitle {
+  font-family: 'VT323', monospace;
+  font-size: clamp(.85rem, 2.5vw, 1.3rem);
+  color: var(--text-dim);
+  margin-top: 8px;
+  max-width: 480px;
+  line-height: 1.5;
+  text-align: center;
+}
+
+/* Caja de controles */
+.controls-info {
+  background: var(--bg-panel);
+  border: 2px solid var(--border-pixel);
+  padding: 10px 16px;
+  min-width: min(340px, 90vw);
+  max-width: 90vw;
+}
+.controls-title {
+  font-size: clamp(.38rem, 1.2vw, .5rem);
+  color: var(--accent-blue);
+  margin-bottom: 6px;
+  letter-spacing: 2px;
+}
+.controls-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px 12px;
+  font-family: 'VT323', monospace;
+  font-size: clamp(1rem, 2.5vw, 1.15rem);
+  color: var(--text-main);
+}
+.controls-grid span:nth-child(odd)  { color: var(--accent-yellow); }
+.controls-grid span:nth-child(even) { color: var(--text-dim); }
+
+/* Botones pixel */
+.pixel-btn {
+  font-family: 'Press Start 2P', monospace;
+  font-size: clamp(.42rem, 1.5vw, .7rem);
+  padding: 12px 22px;
+  background: var(--accent-green);
+  color: #0a1a0a;
+  border: none;
+  cursor: pointer;
+  box-shadow: 4px 4px 0 #004d1a;
+  transition: transform .08s, box-shadow .08s;
+  letter-spacing: 1px;
+  /* Área de toque mínima recomendada por WCAG: 44×44 px */
+  min-height: 44px;
+  touch-action: manipulation;
+}
+.pixel-btn:hover  { transform: translate(-2px,-2px); box-shadow: 6px 6px 0 #004d1a; }
+.pixel-btn:active { transform: translate(2px,2px);  box-shadow: 2px 2px 0 #004d1a; }
+.pixel-btn.danger {
+  background: var(--accent-red);
+  color: #fff;
+  box-shadow: 4px 4px 0 #800000;
+}
+.pixel-btn.danger:hover  { box-shadow: 6px 6px 0 #800000; }
+.pixel-btn.danger:active { box-shadow: 2px 2px 0 #800000; }
+
+.flavor-text {
+  font-family: 'VT323', monospace;
+  font-size: .9rem;
+  color: var(--text-dim);
+  font-style: italic;
+  opacity: .7;
+}
+
+/* ════════════════════════════════════════════
+   PANTALLA DE JUEGO — layout flex columna
+   ════════════════════════════════════════════ */
+#screen-game {
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: center;
+  background: #0d0d1a;
+  gap: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+/* ── HUD ── */
+#hud {
+  width: 100%;
+  max-width: 900px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 8px;
+  background: var(--bg-panel);
+  border-bottom: 2px solid var(--border-pixel);
+  flex-shrink: 0;
+  flex-wrap: nowrap;         /* sin wrap para mantener altura fija */
+  height: var(--hud-height);
+  overflow: hidden;
+  transition: background .2s, border-bottom-color .2s;
+}
+
+.hud-block {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+  flex-shrink: 0;
+}
+.hud-label {
+  font-size: clamp(.28rem, 0.8vw, .34rem);
+  color: var(--text-dim);
+  letter-spacing: 1px;
+  white-space: nowrap;
+}
+.hud-value {
+  font-size: clamp(.5rem, 1.4vw, .65rem);
+  color: var(--accent-yellow);
+  min-width: 28px;
+  white-space: nowrap;
+}
+
+/* Bloque objetivo — crece para ocupar espacio disponible */
+.hud-target-block {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+.hud-target-value {
+  font-family: 'VT323', monospace;
+  font-size: clamp(.85rem, 2vw, 1.1rem);
+  color: #fff;
+  background: #2a1a00;
+  border: 1px solid var(--accent-orange);
+  padding: 1px 5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  animation: targetPulse 1.8s ease-in-out infinite;
+}
+@keyframes targetPulse {
+  0%,100% { border-color: var(--accent-orange); color: #fff; }
+  50%      { border-color: var(--accent-yellow); color: var(--accent-yellow); }
+}
+
+/* Barra de sospecha */
+.suspicion-block {
+  flex: 1;
+  min-width: 70px;
+}
+#suspicion-bar-wrap {
+  width: 100%;
+  height: 10px;
+  background: #1a1a3a;
+  border: 1px solid var(--border-pixel);
+  overflow: hidden;
+}
+#suspicion-bar {
+  height: 100%;
+  width: 0%;
+  background: var(--suspicion-low);
+  transition: width .3s, background .3s;
+}
+
+/* Power-up badges */
+#hud-powerups {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  flex-shrink: 0;
+}
+.hud-powerup {
+  font-family: 'VT323', monospace;
+  font-size: clamp(.8rem, 1.8vw, 1rem);
+  background: #2a1a00;
+  border: 1px solid var(--accent-orange);
+  padding: 1px 5px;
+  color: #ffcc44;
+  white-space: nowrap;
+}
+.hud-powerup.clips  { background:#0d0d2a; border-color:#aaaaee; color:#aaaaee; }
+.hud-powerup.hidden { display: none; }
+
+/* ── Canvas ──
+   flex:1 hace que crezca hasta llenar el espacio entre HUD y controles.
+   max-width/max-height lo confinan dentro de la pantalla.
+   Se complementa con la lógica de resizeCanvas() en JS.
+*/
+#gameCanvas {
+  display: block;
+  width: 100%;
+  max-width: 900px;
+  /*
+    En móvil, el canvas no debe sobrepasar el alto disponible
+    (pantalla − HUD − controles táctiles).
+    JS ajusta el tamaño real; CSS solo pone un límite visual.
+  */
+  flex: 1 1 auto;
+  min-height: 0;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  /* Ocultar cursor del ratón: se reemplaza en mobile */
+  cursor: crosshair;
+  /* touch-action:none en canvas evita interferencias del navegador */
+  touch-action: none;
+}
+
+/* ════════════════════════════════════════════
+   CONTROLES MÓVILES
+   ════════════════════════════════════════════
+   Regla fundamental: SIEMPRE position:fixed y pointer-events:none
+   en el wrapper para no alterar el layout del canvas.
+   Los hijos reactivan pointer-events según necesiten.
+*/
+#mobile-controls {
+  position: fixed;
+  bottom: env(safe-area-inset-bottom, 0px);  /* respeta el home bar de iPhone */
+  left:   0;
+  right:  0;
+  height: var(--mobile-ctrl-h);
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  padding: 0 20px 14px 20px;
+  pointer-events: none;   /* el wrapper no captura eventos */
+  z-index: 50;
+
+  /* DESKTOP: oculto por defecto.
+     Se muestra vía JS si ontouchstart existe, o vía media query. */
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity .2s;
+}
+
+/* En pantallas táctiles y/o pequeñas, mostrar controles */
+@media (max-width: 768px), (pointer: coarse) {
+  #mobile-controls {
+    opacity: 1;
+    visibility: visible;
+  }
+  /* Ocultar cursor en canvas en móvil */
+  #gameCanvas { cursor: none; }
+}
+
+/* ── Joystick virtual ── */
+#touch-joystick {
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.08);
+  border: 2px solid rgba(57,255,106,0.35);
+  position: relative;
+  pointer-events: all;   /* captura toques */
+  touch-action: none;
+  /* Pixel-art feel: sin anti-aliasing en borde */
+  image-rendering: pixelated;
+}
+
+#joystick-knob {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(57,255,106,0.55);
+  border: 2px solid rgba(57,255,106,0.9);
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;  /* no captura — el padre lo hace */
+  transition: background .1s;
+  box-shadow: 0 0 8px rgba(57,255,106,0.4);
+}
+
+/* Knob activo: más brillante */
+#touch-joystick.active #joystick-knob {
+  background: rgba(57,255,106,0.85);
+  box-shadow: 0 0 16px rgba(57,255,106,0.6);
+}
+
+/* ── Botón de acción (E) ── */
+#touch-action {
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  background: rgba(255,233,77,0.18);
+  border: 2px solid rgba(255,233,77,0.55);
+  color: var(--accent-yellow);
+  font-family: 'Press Start 2P', monospace;
+  font-size: 1.1rem;
+  cursor: pointer;
+  pointer-events: all;
+  touch-action: manipulation;
+  /* Efecto pixel retroiluminado */
+  box-shadow: 0 0 10px rgba(255,233,77,0.25);
+  transition: background .08s, box-shadow .08s;
+  /* Centrar texto */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Sin outline en móvil */
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+#touch-action:active,
+#touch-action.pressed {
+  background: rgba(255,233,77,0.42);
+  box-shadow: 0 0 20px rgba(255,233,77,0.55);
+  transform: scale(0.93);
+}
+
+/* ════════════════════════════════════════════
+   AVISO DE ORIENTACIÓN PORTRAIT
+   ════════════════════════════════════════════
+   Aparece solo cuando el dispositivo está en vertical
+   Y es táctil (móvil/tablet).
+   No bloquea el juego, flota encima.
+*/
+#rotate-warning {
+  display: none;   /* oculto por defecto en todo */
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(13,13,26,0.92);
+  border: 2px solid var(--accent-yellow);
+  padding: 16px 24px;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  z-index: 300;
+  font-family: 'VT323', monospace;
+  font-size: 1.1rem;
+  color: var(--accent-yellow);
+  text-align: center;
+  pointer-events: none;   /* no bloquea toques */
+}
+/* Solo en portrait + pantalla táctil → mostrar aviso */
+@media (orientation: portrait) and (pointer: coarse) {
+  #rotate-warning { display: flex; opacity: .75; }
+}
+
+/* ════════════════════════════════════════════
+   PANTALLA DE PAUSA
+   ════════════════════════════════════════════ */
+.pause-screen {
+  background: rgba(0,0,0,0.88) !important;
+  backdrop-filter: blur(4px);
+  z-index: 200;
+}
+.pause-icon { font-size: 2.8rem; animation: pulse 1.5s infinite; }
+.pause-title {
+  font-size: clamp(1rem, 4vw, 2rem);
+  color: var(--accent-blue);
+  text-shadow: 3px 3px 0 #003366;
+  letter-spacing: 6px;
+}
+.pause-tip {
+  font-family: 'VT323', monospace;
+  font-size: clamp(1rem, 2.5vw, 1.1rem);
+  color: var(--text-dim);
+  font-style: italic;
+}
+.pause-hint {
+  font-size: clamp(.3rem, 1vw, .35rem);
+  color: var(--text-dim);
+  opacity: .6;
+}
+
+/* ════════════════════════════════════════════
+   GAME OVER / WIN
+   ════════════════════════════════════════════ */
+.go-icon, .win-icon {
+  font-size: clamp(2.5rem, 8vw, 3.5rem);
+  animation: pulse 1s infinite;
+}
+.go-title {
+  font-size: clamp(.75rem, 3vw, 1.6rem);
+  color: var(--accent-red);
+  text-shadow: 3px 3px 0 #500;
+  text-align: center;
+}
+.win-title {
+  font-size: clamp(.75rem, 3vw, 1.6rem);
+  color: var(--accent-green);
+  text-shadow: 3px 3px 0 #004d1a;
+  text-align: center;
+}
+.go-sub, .win-sub {
+  font-family: 'VT323', monospace;
+  font-size: clamp(.85rem, 2.5vw, 1.3rem);
+  color: var(--text-dim);
+  text-align: center;
+}
+.go-stats, .win-stats {
+  font-family: 'VT323', monospace;
+  font-size: clamp(.85rem, 2.2vw, 1.2rem);
+  background: var(--bg-panel);
+  border: 1px solid var(--border-pixel);
+  padding: 10px 20px;
+  text-align: center;
+  line-height: 2;
+  color: var(--accent-yellow);
+}
+
+/* ════════════════════════════════════════════
+   ANIMACIONES
+   ════════════════════════════════════════════ */
+@keyframes flicker {
+  0%,100% { opacity:1; }
+  92%      { opacity:1; }
+  93%      { opacity:.7; }
+  94%      { opacity:1; }
+  97%      { opacity:.85; }
+  98%      { opacity:1; }
+}
+@keyframes pulse {
+  0%,100% { transform: scale(1); }
+  50%      { transform: scale(1.1); }
+}
+
+/* Scanlines CRT — solo cuando el juego está activo */
+#screen-game::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent 0px, transparent 3px,
+    rgba(0,0,0,.09) 3px, rgba(0,0,0,.09) 4px
+  );
+  pointer-events: none;
+  z-index: 40;
+}
+
+/* ════════════════════════════════════════════
+   MEDIA QUERY COMPACTO ≤ 480px
+   Reduce HUD cuando el teléfono es muy pequeño
+   ════════════════════════════════════════════ */
+@media (max-width: 480px) {
+  :root { --hud-height: 40px; }
+
+  .hud-label { display: none; }   /* ocultar etiquetas para ganar espacio */
+  .hud-value { font-size: .52rem; }
+
+  .hud-target-value { font-size: .85rem; }
+
+  #hud { gap: 4px; padding: 4px 6px; }
+}
